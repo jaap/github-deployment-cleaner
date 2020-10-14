@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+
+    <title>My first BootstrapVue app</title>
+
+    <!-- Required Stylesheets -->
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="https://unpkg.com/bootstrap/dist/css/bootstrap.min.css"
+    />
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"
+    />
+
+    <!-- Load polyfills to support older browsers -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"></script>
+
+    <!-- Required scripts -->
+    <script src="https://unpkg.com/vue@latest/dist/vue.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+  </head>
+  <body>
+    <!-- Our application root element -->
+    <div id="app">
+      <b-container fluid>
+        <h1 class="title">
+          Github deployment cleaner
+        </h1>
+        <p>
+          This tool performs all calls client side, no keys will be saved.
+          All calls are performed directly on the Github API.
+          See source code here: <a href="https://github.com/jaap/github-deployment-cleaner">https://github.com/jaap/github-deployment-cleaner</a>
+        </p>
+        <p>
+          Based on <a href="https://stackblitz.com/edit/github-deployment-clearer">https://stackblitz.com/edit/github-deployment-clearer</a>
+          And <a href="https://stackoverflow.com/questions/53452910/how-to-remove-a-github-environment">https://stackoverflow.com/questions/53452910/how-to-remove-a-github-environment</a>
+        </p>
+        <p>
+          <strong>RECOMMENDED</strong>: Disconnect HEROKU from Github before doing this (though not strictly necessary, I think).
+          <br>
+          See <a href="https://stackoverflow.com/a/61272173/6569950">https://stackoverflow.com/a/61272173/6569950</a> for more info.
+        </p>
+
+        <b-form-group
+          id="user_or_rog"
+          label="User or organisation name"
+          label-for="user_or_rog"
+        >
+          <b-form-input id="input-1" v-model="userOrOrg" trim></b-form-input>
+        </b-form-group>
+
+        <b-form-group
+          id="repo"
+          label="Repository"
+          label-for="repo"
+        >
+          <b-form-input id="input-1" v-model="repo" trim></b-form-input>
+        </b-form-group>
+
+        <b-form-group
+          id="token"
+          label="Token"
+          description="Must be `repo_deployments` authorized"
+          label-for="token"
+        >
+          <b-form-input id="input-1" v-model="token" trim></b-form-input>
+        </b-form-group>
+
+        <b-form-group
+        >
+          <b-button @click="getDeployments">Get deployments</b-button> - Gets only 30 at a time. Repeat if needed. I'll accept a PR to do some smarter automation.
+        </b-form-group>
+
+        <table class="table" v-if="deployments.length > 0">
+          <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Description</th>
+            <th scope="col">Creator</th>
+            <th scope="col">Created at</th>
+            <th>
+              <b-button variant="danger" @click="deleteAll">Delete all</b-button>
+            </th>
+          </tr>
+          </thead>
+          <tbody name="fade" is="transition-group">
+          <tr v-for="deployment in deployments" :key="deployment.id" v-if="!deployment.deleted">
+            <th scope="row">{{ deployment.id }}</th>
+            <td>{{ deployment.description }}</td>
+            <td>{{ deployment.creator.login }}</td>
+            <td>{{ deployment.created_at }}</td>
+            <td>
+              <b-button v-if="!deployment.deleting" variant="danger" @click="deleteDeployment(deployment)">Delete</b-button>
+              <b-spinner variant="danger" v-else></b-spinner>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+
+      </b-container>
+    </div>
+
+    <!-- Start running your app -->
+    <script>
+      window.app = new Vue({
+        el: '#app',
+        data: {
+          userOrOrg:  '',
+          repo: '',
+          token: '',
+          deployments: []
+        },
+        computed: {
+          url() {
+            return `https://api.github.com/repos/${this.userOrOrg}/${this.repo}/deployments`
+          }
+        },
+        methods: {
+          async getDeployments(){
+            const res = await fetch(this.url, { headers: { authorization: `token ${this.token}` } });
+            const data = await res.json();
+            data.forEach(function (element) {
+              element.deleted = false
+              element.deleting = false
+            });
+            this.deployments = data;
+          },
+          async deleteDeployment(deployment){
+            deployment.deleting = true
+            fetch(`${this.url}/${deployment.id}/statuses`, {
+              method: "POST",
+              body: JSON.stringify({ state: "inactive" }),
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/vnd.github.ant-man-preview+json",
+                authorization: `token ${this.token}`
+              }
+            }).then(() => {
+              fetch(`${this.url}/${deployment.id}`, {
+                method: "DELETE",
+                headers: { authorization: `token ${this.token}` }
+              }).then(() => {
+                deployment.deleting = false;
+                deployment.deleted = true;
+              })
+            });
+          },
+          async deleteAll(){
+            this.deployments.forEach(deployment => {
+              this.deleteDeployment(deployment)
+            })
+          }
+        }
+      })
+    </script>
+  </body>
+</html>
