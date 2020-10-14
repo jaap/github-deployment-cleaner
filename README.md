@@ -1,5 +1,10 @@
 # github-deployment-cleaner
 
+Frontend application which helps with cleaning existing deployments on a repo.
+
+Based on https://stackblitz.com/edit/github-deployment-clearer
+And https://stackoverflow.com/questions/53452910/how-to-remove-a-github-environment
+
 ## Build Setup
 
 ```bash

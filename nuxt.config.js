@@ -1,4 +1,9 @@
 export default {
+  env: {
+    gh_org_or_user: process.env.GITHUB_ORG_OR_USER || '',
+    gh_repo: process.env.GITHUB_REPO || '',
+    gh_token: process.env.GITHUB_TOKEN || ''
+  },
   // Disable server-side rendering (https://go.nuxtjs.dev/ssr-mode)
   ssr: false,
 
