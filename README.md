@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/c57788f0-3ba8-47d4-af20-be2de1dc247c/deploy-status)](https://app.netlify.com/sites/github-deployment-cleaner/deploys)
+
 # github-deployment-cleaner
 
 Frontend application which helps with cleaning existing deployments on a repo.
